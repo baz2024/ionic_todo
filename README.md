@@ -1,138 +1,99 @@
-# Advanced Ionic + React Tutorial
-### Author: Dr. Basel Magableh
-### Date: April 2025
+# Ionic + React Todo App (Single Page)
 
-## Overview
-This tutorial demonstrates how to build an advanced Ionic app using React. It includes:
+## 🧼 Clean Setup
 
-- Login and logout functionality
-- A side menu (drawer-style navigation)
-- Avatar with popover
-- Header-based breadcrumbs
-- Cards for user interface sections
-- Data listing with IonList
-
-### Step 1: Create the Project
-Install the Ionic CLI and create a React-based Ionic app:
+If you created your app using:
 
 ```bash
-npm install -g @ionic/cli
-ionic start ionic-todo-app tabs --type=react
-cd ionic-todo-app
+ionic start ionic-todo-app blank --type=react
 ```
+ 
+---
 
-### Step 2: Folder Structure
-Recommended folder layout:
+## 🧱 Folder Structure
 
 ```text
 src/
-|- components/
-|  |- Header.tsx
 |- pages/
-|  |- Login.tsx
-|  |- Dashboard.tsx
+|   |- TodoPage.tsx
 |- App.tsx
+|- main.tsx
 ```
 
-### Step 3: Login Page
-`pages/Login.tsx`:
+---
+
+## 📄 `pages/TodoPage.tsx`
 
 ```tsx
-import { IonContent, IonPage, IonInput, IonButton, IonItem, IonLabel } from '@ionic/react';
-import { useHistory } from 'react-router';
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonInput,
+  IonButton, IonList, IonItem, IonLabel, IonIcon, IonCheckbox
+} from '@ionic/react';
+import { trashOutline } from 'ionicons/icons';
+import React, { useState, useEffect } from 'react';
 
-const Login: React.FC = () => {
-  const history = useHistory();
-  const handleLogin = () => {
-    localStorage.setItem('user', 'demo');
-    history.push('/dashboard');
+const TodoPage: React.FC = () => {
+  const [input, setInput] = useState('');
+  const [todos, setTodos] = useState<{ text: string, completed: boolean }[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('todos');
+    if (stored) setTodos(JSON.parse(stored));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }, [todos]);
+
+  const handleAddTodo = () => {
+    if (!input.trim()) return;
+    setTodos([...todos, { text: input, completed: false }]);
+    setInput('');
+  };
+
+  const handleDeleteTodo = (index: number) => {
+    setTodos(todos.filter((_, i) => i !== index));
+  };
+
+  const toggleTodo = (index: number) => {
+    setTodos(todos.map((todo, i) => i === index
+      ? { ...todo, completed: !todo.completed }
+      : todo
+    ));
   };
 
   return (
     <IonPage>
-      <IonContent className="ion-padding">
-        <IonItem>
-          <IonLabel position="floating">Username</IonLabel>
-          <IonInput />
-        </IonItem>
-        <IonButton expand="full" onClick={handleLogin}>Login</IonButton>
-      </IonContent>
-    </IonPage>
-  );
-};
-
-export default Login;
-```
-
-### Step 4: Header with Avatar + Popover
-`components/Header.tsx`:
-
-```tsx
-import {
-  IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonAvatar, IonPopover, IonContent, IonItem
-} from '@ionic/react';
-import React, { useState } from 'react';
-
-const Header: React.FC = () => {
-  const [showPopover, setShowPopover] = useState(false);
-
-  return (
-    <>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Ionic Dashboard</IonTitle>
-          <IonButtons slot="end">
-            <IonAvatar onClick={() => setShowPopover(true)}>
-              <img alt="avatar" src="https://i.pravatar.cc/40" />
-            </IonAvatar>
-          </IonButtons>
+          <IonTitle>Ionic Todo App</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonPopover
-        isOpen={showPopover}
-        onDidDismiss={() => setShowPopover(false)}
-      >
-        <IonContent className="ion-padding">
-          <IonItem button onClick={() => {
-            localStorage.clear();
-            window.location.href = "/";
-          }}>Logout</IonItem>
-        </IonContent>
-      </IonPopover>
-    </>
-  );
-};
-
-export default Header;
-```
-
-### Step 5: Dashboard with Card and List
-`pages/Dashboard.tsx`:
-
-```tsx
-import {
-  IonPage, IonContent, IonCard, IonCardHeader,
-  IonCardTitle, IonCardContent, IonList, IonItem
-} from '@ionic/react';
-import Header from '../components/Header';
-
-const Dashboard: React.FC = () => {
-  const tasks = ['Buy groceries', 'Read book', 'Clean kitchen'];
-
-  return (
-    <IonPage>
-      <Header />
       <IonContent className="ion-padding">
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Welcome</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>Here are your tasks:</IonCardContent>
-        </IonCard>
+        <IonInput
+          value={input}
+          placeholder="Enter a new todo"
+          onIonChange={e => setInput(e.detail.value!)}
+        />
+        <IonButton expand="block" onClick={handleAddTodo} className="ion-margin-top">
+          Add
+        </IonButton>
         <IonList>
-          {tasks.map((task, idx) => (
-            <IonItem key={idx}>{task}</IonItem>
+          {todos.map((todo, index) => (
+            <IonItem key={index} style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              backgroundColor: todo.completed ? '#e0f7fa' : ''
+            }}>
+              <IonCheckbox
+                slot="start"
+                checked={todo.completed}
+                onIonChange={() => toggleTodo(index)}
+              />
+              <IonLabel>{todo.text}</IonLabel>
+              <IonButton fill="clear" slot="end" onClick={() => handleDeleteTodo(index)}>
+                <IonIcon icon={trashOutline} />
+              </IonButton>
+            </IonItem>
           ))}
         </IonList>
       </IonContent>
@@ -140,29 +101,26 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default TodoPage;
 ```
 
-### Step 6: Routing Setup
-`App.tsx`:
+---
+
+## ⚙️ `App.tsx`
 
 ```tsx
-import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import { Route, Redirect } from 'react-router-dom';
+import TodoPage from './pages/TodoPage';
 
 const App: React.FC = () => {
-  const isLoggedIn = !!localStorage.getItem('user');
-
   return (
     <IonApp>
       <IonReactRouter>
         <IonRouterOutlet>
-          <Route exact path="/" component={Login} />
-          <Route path="/dashboard" render={() =>
-            isLoggedIn ? <Dashboard /> : <Redirect to="/" />} />
+          <Route exact path="/" component={TodoPage} />
+          <Redirect to="/" />
         </IonRouterOutlet>
       </IonReactRouter>
     </IonApp>
@@ -172,5 +130,14 @@ const App: React.FC = () => {
 export default App;
 ```
 
-## Conclusion
-This Ionic + React app shows how to create a modern mobile-style interface using core UI components. It includes authentication, header nav, popovers, cards, and dynamic task listing using IonList.
+---
+
+## ✅ Summary
+
+| Feature       | Implemented |
+|---------------|-------------|
+| Add Todo      | ✅ with `IonInput` & `IonButton` |
+| Toggle Done   | ✅ using `IonCheckbox` |
+| Delete Todo   | ✅ with trash icon |
+| LocalStorage  | ✅ using `useEffect` |
+| UI Highlight  | ✅ done todos are styled differently |
